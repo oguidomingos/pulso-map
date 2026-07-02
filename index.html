@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pulso — Operação Vertical (mapa vivo)</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --panel: #1e2130;
+    --panel2: #252a3a;
+    --border: #2e3450;
+    --accent: #ff6b4a;
+    --accent2: #ff9478;
+    --text: #e8eaf0;
+    --text-muted: #7a819a;
+    --team: #4a9eff;
+    --client: #4aff8c;
+    --platform: #b44aff;
+    --deliverable: #ffb84a;
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    padding: 12px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--text-muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
+
+  .header-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+  .btn-reset {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+
+  .legend {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+
+  main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* LEFT PANEL */
+  .sidebar {
+    width: 240px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+    padding: 12px 0;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .group-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 8px 16px 4px;
+    margin-top: 4px;
+  }
+
+  .flow-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 12px;
+    color: var(--text-muted);
+    border-left: 2px solid transparent;
+  }
+  .flow-chip:hover { background: var(--panel2); color: var(--text); }
+  .flow-chip.active {
+    background: var(--panel2);
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
+  .flow-chip .chip-num {
+    width: 18px; height: 18px;
+    background: var(--panel2);
+    border-radius: 50%;
+    font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+    flex-shrink: 0;
+    color: var(--text-muted);
+  }
+  .flow-chip.active .chip-num { background: var(--accent); color: #fff; }
+
+  /* CENTER */
+  .center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #graph-container {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+  }
+
+  #graph-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* BOTTOM PANEL */
+  .bottom-panel {
+    height: 180px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 12px 20px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .bottom-panel::-webkit-scrollbar { width: 4px; }
+  .bottom-panel::-webkit-scrollbar-track { background: transparent; }
+  .bottom-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .bottom-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 6px 10px;
+    background: var(--panel2);
+    border-radius: 6px;
+    font-size: 12px;
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .step-num {
+    width: 20px; height: 20px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .step-content { flex: 1; }
+  .step-path { color: var(--text); font-weight: 500; }
+  .step-path .arrow { color: var(--accent); margin: 0 4px; }
+  .step-label { color: var(--accent2); font-weight: 600; }
+  .step-note { color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 20px;
+  }
+
+  /* SVG Nodes */
+  .node-group { cursor: default; transition: opacity 0.3s; }
+  .node-group.dimmed { opacity: 0.15; }
+  .node-group.highlighted { opacity: 1; }
+
+  .node-rect {
+    rx: 8; ry: 8;
+    transition: filter 0.3s;
+  }
+  .node-group.highlighted .node-rect {
+    filter: drop-shadow(0 0 8px currentColor);
+  }
+
+  /* SVG Edges */
+  .edge-path {
+    fill: none;
+    stroke-width: 1.5;
+    stroke: var(--border);
+    transition: opacity 0.3s, stroke 0.3s;
+    marker-end: url(#arrowhead-default);
+  }
+  .edge-path.dimmed { opacity: 0.05; }
+  .edge-path.active {
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-dasharray: 6 3;
+    animation: dashMove 0.8s linear infinite;
+    marker-end: url(#arrowhead-active);
+  }
+
+  @keyframes dashMove {
+    to { stroke-dashoffset: -18; }
+  }
+
+  .edge-label {
+    font-size: 10px;
+    fill: var(--text-muted);
+    transition: opacity 0.3s;
+  }
+  .edge-label.active { fill: var(--accent2); font-weight: 600; }
+  .edge-label.dimmed { opacity: 0.05; }
+
+  .step-badge {
+    font-size: 9px;
+    font-weight: 700;
+    fill: var(--accent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .step-badge.visible { opacity: 1; }
+
+  .layer-label {
+    font-size: 10px;
+    fill: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Pulso <span>— Mapa Operacional v2.0</span></div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--team)"></div>Altair · Calil · Sérgio · Edu · Guilherme</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--client)"></div>Cliente</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--platform)"></div>Plataformas & IA</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--deliverable)"></div>Entregável</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-reset" id="btn-reset">Ver tudo</button>
+  </div>
+</header>
+
+<main>
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <div class="center">
+    <div id="graph-container">
+      <svg id="graph-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="bottom-panel">
+      <div class="bottom-title" id="bottom-title">Selecione um fluxo para ver os passos</div>
+      <div class="steps-list" id="steps-list">
+        <div class="empty-state">Clique em qualquer fluxo no painel esquerdo para explorar o mapa operacional.</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ============================================================
+// DATA — v2.0 · Time correto, IA, PRÉ-MÊS, sem acesso direto
+// ============================================================
+const DATA = {
+  nodes: [
+    // Team — revisores humanos (regra DES-335: IA executa, humano aprova)
+    { id: "altair",    label: "Altair",            layer: "team", icon: "👤" },
+    { id: "calil",     label: "Calil",             layer: "team", icon: "🤝" },
+    { id: "sergio",    label: "Serginho",          layer: "team", icon: "📊" },
+    { id: "edu",       label: "Eduardo",           layer: "team", icon: "🎨" },
+    { id: "guilherme", label: "Guilherme",         layer: "team", icon: "💻" },
+    // Client
+    { id: "cliente",   label: "Cliente (Médico)",  layer: "client", icon: "🏥" },
+    // Platform — sistemas vivos na VPS
+    { id: "lp",        label: "LP do cliente",     layer: "platform", icon: "🌐" },
+    { id: "webhook",   label: "lead-webhook :3020",layer: "platform", icon: "⚙️" },
+    { id: "sheets",    label: "Planilhas P1+P2",   layer: "platform", icon: "📄" },
+    { id: "crm",       label: "Frappe CRM",        layer: "platform", icon: "📇" },
+    { id: "drive",     label: "Drive (01-Onboarding)", layer: "platform", icon: "📁" },
+    { id: "brain",     label: "account-brain (repo)", layer: "platform", icon: "🐙" },
+    { id: "paperclip", label: "Paperclip (agentes)", layer: "platform", icon: "🤖" },
+    { id: "docuseal",  label: "DocuSeal",          layer: "platform", icon: "✍️" },
+    { id: "invoice",   label: "Invoice Ninja",     layer: "platform", icon: "💳" },
+    { id: "plane",     label: "Plane · Operacional", layer: "platform", icon: "📋" },
+    { id: "gads",      label: "Google Ads (MCC)",  layer: "platform", icon: "🔍" },
+    { id: "meta",      label: "Meta Ads",          layer: "platform", icon: "📱" },
+    { id: "bento",     label: "Bento (link-in-bio)", layer: "platform", icon: "🍱" },
+    { id: "evolution", label: "Evolution / WhatsApp", layer: "platform", icon: "💬" },
+    { id: "affine",    label: "Affine (board)",    layer: "platform", icon: "🧠" },
+    // Deliverables
+    { id: "proposta",  label: "Proposta padrão Pulso", layer: "deliverable", icon: "🎯" },
+    { id: "estrategia",label: "Diagnóstico 12 etapas", layer: "deliverable", icon: "🧭" },
+    { id: "campanhas", label: "Campanhas ativas",  layer: "deliverable", icon: "🚀" },
+    { id: "relatorio", label: "Relatório semanal", layer: "deliverable", icon: "📊" },
+  ],
+
+  flows: [
+    // ─── COMERCIAL ───
+    {
+      id: "captacao",
+      name: "Captação de leads (✅ automatizado)",
+      group: "Comercial",
+      steps: [
+        { from: "cliente",  to: "lp",      label: "✅ Tráfego chega na LP",       note: "LPs multi-página por região (ex.: /joelho, /coluna). UTMs completas na URL" },
+        { from: "lp",       to: "webhook", label: "✅ Form → webhook unificado",  note: "leads.pulso.marketing → :3020. Dedup 5min por telefone+página. Blindado contra testes (curl/TESTE nunca contam)" },
+        { from: "webhook",  to: "sheets",  label: "✅ Grava P1 (LEADS) + P2 (DADOS)", note: "P1 = operacional da secretária. P2 = tracking completo (utm, campaign_id, ad_id, gclid). Conciliação por LEAD_ID auditada" },
+        { from: "sheets",   to: "crm",     label: "🟡 Lead no CRM",               note: "onboard-init.sh cria lead no Frappe. Follow-up de proposta sem resposta ainda é manual (gap)" },
+      ]
+    },
+    {
+      id: "proposta-flow",
+      name: "Triagem → Proposta (🟡 padrão novo)",
+      group: "Comercial",
+      steps: [
+        { from: "calil",    to: "cliente",  label: "🔴 Ligação de triagem",       note: "Gravada no iPhone; gravação + transcrição automática sobem pro Drive (Clientes/<Nome>/01-Onboarding)" },
+        { from: "drive",    to: "brain",    label: "✅ sync-triagem.sh (30min)",   note: "Transcrição desce pra /opt/account-brains/<slug>/onboarding/triagem/. Áudio vira pointer .link" },
+        { from: "brain",    to: "paperclip",label: "✅ Issue de proposta nasce",   note: "onboard-init cria issue já apontando pro insumo. Sem transcrição → blocked (nunca inventa — gate 0 Calil)" },
+        { from: "paperclip",to: "proposta", label: "🟡 web-builder gera preview",  note: "Skill proposta-preview: id visual Pulso (teal #2CB1BC + DM Sans), 10 seções fixas, benchmark de CPA real da MCC. Aguarda piloto" },
+        { from: "proposta", to: "guilherme",label: "🔴 Revisão visual (DES-335)",  note: "IA executa, humano aprova. Issue vai pra review — nunca direto pro cliente" },
+        { from: "guilherme",to: "calil",    label: "🔴 Aprovação final",           note: "Calil aprova e envia ao prospect" },
+        { from: "calil",    to: "cliente",  label: "🔴 Apresentação + fechamento", note: "Reunião de fechamento (C5) + protocolo de resgate se hesitar" },
+      ]
+    },
+    {
+      id: "fechamento",
+      name: "Deal → Contrato → Cobrança (✅)",
+      group: "Comercial",
+      steps: [
+        { from: "crm",      to: "docuseal", label: "🟡 Deal dispara contrato",    note: "onboard-deal.sh — disparo hoje é semi-manual" },
+        { from: "docuseal", to: "invoice",  label: "✅ Assinou → cobrança",        note: "docuseal-webhook (systemd) → post-contract-invoiceninja.sh cria fatura recorrente pelo período do contrato" },
+        { from: "docuseal", to: "plane",    label: "✅ Onboarding provisionado",   note: "onboard-plane.sh: label de cliente no board Operacional + onboard-calendar.sh: eventos no Google Calendar" },
+        { from: "docuseal", to: "brain",    label: "✅ Repo + Drive do cliente",   note: "gh repo <slug>-account-brain + pasta no Drive com 9 subpastas padrão" },
+      ]
+    },
+
+    // ─── ONBOARDING ESTRATÉGICO ───
+    {
+      id: "diagnostico",
+      name: "Diagnóstico 12 etapas (🟡 DES-335)",
+      group: "Onboarding",
+      steps: [
+        { from: "calil",     to: "cliente",   label: "🔴 Etapa 1 — Coleta (humana)", note: "Questionário de onboarding preenchido na reunião. Única etapa 100% humana" },
+        { from: "paperclip", to: "estrategia",label: "🟡 Etapas 2–12 por IA",       note: "BMC, PESTLE, SWOT, concorrência, auditoria, baseline, plano 90d, ICP, posicionamento, funis, copy. Formato ainda irregular (consolidação pendente)" },
+        { from: "estrategia",to: "sergio",    label: "🔴 Revisão nomeada",           note: "Cada etapa tem revisor: Calil (BMC/SWOT/ICP), Sérgio (PESTLE/concorrência/baseline/funis), Edu (posicionamento/copy)" },
+        { from: "estrategia",to: "brain",     label: "✅ Artefatos no brain",        note: "Salvos em /opt/account-brains/<slug>/artifacts + sync 2h pro Drive" },
+      ]
+    },
+
+    // ─── PERFORMANCE ───
+    {
+      id: "trafego",
+      name: "Bento → Campanhas (🟡 gate novo)",
+      group: "Performance",
+      steps: [
+        { from: "edu",      to: "bento",     label: "🔴 Bento padrão do cliente",  note: "PRÉ-REQUISITO da etapa Meta: link-in-bio com site, redes, WhatsApp de atendimento e locais (padrão Dr. Rafael). <slug>.bento.pulso.marketing" },
+        { from: "bento",    to: "meta",      label: "🟡 Link na bio → campanhas",  note: "Gate no board: issue 'Bento no padrão Pulso' bloqueia a issue de Meta Ads" },
+        { from: "sergio",   to: "gads",      label: "🟡 Setup e otimização Google",note: "Estrutura de conta padrão. Meta de casa: CPL < R$50" },
+        { from: "sergio",   to: "meta",      label: "🔴 Setup Meta Ads",           note: "Meta Ads API ainda não conectada (sem credencial) — leitura de custo só no Google por enquanto" },
+        { from: "meta",     to: "campanhas", label: "🟡 Campanhas no ar",          note: "" },
+        { from: "gads",     to: "campanhas", label: "✅ Custo/CPA por campanha",    note: "Google Ads API v21 conectada na MCC (4 contas). CPA comparável entre clientes" },
+        { from: "campanhas",to: "lp",        label: "✅ UTMs fecham o ciclo",       note: "Toda campanha → LP com UTM → P2 → CPA por campanha no relatório. Loop fechado" },
+      ]
+    },
+
+    // ─── MANUTENÇÃO / PROVA DE VALOR ───
+    {
+      id: "prova-valor",
+      name: "Relatório semanal (✅ seg 8h)",
+      group: "Manutenção",
+      steps: [
+        { from: "plane",    to: "relatorio", label: "✅ Entregas da semana",       note: "Issues Done/andamento/bloqueadas por label de cliente + fallback por keyword" },
+        { from: "sheets",   to: "relatorio", label: "✅ Leads + origem",           note: "P1 (captados) + P2 (origem, campanha, criativo, página). Números auditados por LEAD_ID" },
+        { from: "gads",     to: "relatorio", label: "✅ Investimento + CPA",        note: "Nome real de campanha + CPA por campanha + farol vs meta CPL<R$50 (🟢/🔴)" },
+        { from: "relatorio",to: "evolution", label: "✅ WhatsApp da Assessoria",    note: "send-weekly-reports.sh — cron segunda 8h BRT. Equipe repassa ao cliente" },
+        { from: "relatorio",to: "brain",     label: "✅ Histórico versionado",      note: "semana-YYYY-Wnn.md no brain → sync 2h pro Drive do cliente" },
+        { from: "relatorio",to: "affine",    label: "🟡 Board 'tudo que foi feito'",note: "Em construção: doc por cliente no Affine com linha do tempo de entregas" },
+      ]
+    },
+
+    // ─── INFRA ───
+    {
+      id: "fundacao",
+      name: "Fundação (✅ hardening jul/26)",
+      group: "Infra",
+      steps: [
+        { from: "guilherme", to: "webhook",  label: "✅ Firewall + secrets",       note: "ufw + DOCKER-USER (só 22/80/443 públicos). Tokens centralizados em /root/bin/.env (chmod 600)" },
+        { from: "guilherme", to: "sheets",   label: "✅ Backup diário 4h",          note: "6 bancos (Plane, CRM, InvoiceNinja, Evolution, Affine, Listmonk) → local + Google Drive, retenção 14d" },
+        { from: "guilherme", to: "brain",    label: "✅ Memória institucional",     note: "pulso-brain (playbooks/SOPs) + account-brains (por cliente) + este mapa" },
+      ]
+    },
+  ]
+};
+
+// ============================================================
+// LAYOUT CONFIG
+// ============================================================
+const LAYER_COLORS = {
+  team:        { fill: "#1a2a4a", stroke: "#4a9eff", text: "#90c8ff" },
+  client:      { fill: "#1a3a2a", stroke: "#4aff8c", text: "#80ff9a" },
+  platform:    { fill: "#2a1a4a", stroke: "#b44aff", text: "#d080ff" },
+  deliverable: { fill: "#3a2a1a", stroke: "#ffb84a", text: "#ffd080" },
+};
+
+const NODE_W = 130;
+const NODE_H = 44;
+
+function buildLayout(svgW, svgH) {
+  const padX = 60;
+  const padY = 50;
+  const layerH = (svgH - padY * 2) / 4;
+
+  const layers = {
+    team:        DATA.nodes.filter(n => n.layer === "team"),
+    client:      DATA.nodes.filter(n => n.layer === "client"),
+    platform:    DATA.nodes.filter(n => n.layer === "platform"),
+    deliverable: DATA.nodes.filter(n => n.layer === "deliverable"),
+  };
+
+  const positions = {};
+  const layerOrder = ["team", "client", "platform", "deliverable"];
+
+  layerOrder.forEach((layer, li) => {
+    const nodes = layers[layer];
+    const y = padY + li * layerH + layerH / 2 - NODE_H / 2;
+    const totalW = nodes.length * NODE_W + (nodes.length - 1) * 20;
+    const startX = (svgW - totalW) / 2;
+    nodes.forEach((n, i) => {
+      positions[n.id] = {
+        x: startX + i * (NODE_W + 20),
+        y,
+        cx: startX + i * (NODE_W + 20) + NODE_W / 2,
+        cy: y + NODE_H / 2,
+      };
+    });
+  });
+
+  return positions;
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+let currentFlow = null;
+let svgW = 0, svgH = 0;
+let positions = {};
+
+function getSVGDimensions() {
+  const container = document.getElementById("graph-container");
+  return { w: container.clientWidth, h: container.clientHeight };
+}
+
+function renderGraph() {
+  const svg = document.getElementById("graph-svg");
+  const { w, h } = getSVGDimensions();
+  svgW = w; svgH = h;
+  positions = buildLayout(w, h);
+
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.innerHTML = "";
+
+  // Defs
+  const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+  defs.innerHTML = `
+    <marker id="arrowhead-default" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#2e3450"/>
+    </marker>
+    <marker id="arrowhead-active" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#ff6b4a"/>
+    </marker>
+  `;
+  svg.appendChild(defs);
+
+  // Layer labels
+  const layerLabels = [
+    { y: positions["altair"]?.y - 18, text: "Time Pulso" },
+    { y: positions["cliente"]?.y - 18, text: "Cliente" },
+    { y: positions["ia-agent"]?.y - 18, text: "Plataformas & IA" },
+    { y: positions["diagnostico"]?.y - 18, text: "Entregáveis" },
+  ];
+  layerLabels.forEach(ll => {
+    if (!ll.y) return;
+    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t.setAttribute("x", 20);
+    t.setAttribute("y", ll.y + 14);
+    t.setAttribute("class", "layer-label");
+    t.textContent = ll.text;
+    svg.appendChild(t);
+  });
+
+  // Edges group
+  const edgesG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  edgesG.id = "edges-group";
+  svg.appendChild(edgesG);
+
+  // Nodes group
+  const nodesG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  nodesG.id = "nodes-group";
+  svg.appendChild(nodesG);
+
+  // Draw all base edges (faint background)
+  const allEdges = new Set();
+  DATA.flows.forEach(flow => {
+    flow.steps.forEach(step => {
+      const key = [step.from, step.to].sort().join("--");
+      if (!allEdges.has(key)) {
+        allEdges.add(key);
+        drawEdge(edgesG, step.from, step.to, "", false, 0);
+      }
+    });
+  });
+
+  // Draw nodes
+  DATA.nodes.forEach(node => {
+    const pos = positions[node.id];
+    if (!pos) return;
+    const col = LAYER_COLORS[node.layer];
+
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute("class", "node-group");
+    g.setAttribute("id", `node-${node.id}`);
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", pos.x);
+    rect.setAttribute("y", pos.y);
+    rect.setAttribute("width", NODE_W);
+    rect.setAttribute("height", NODE_H);
+    rect.setAttribute("rx", 8);
+    rect.setAttribute("fill", col.fill);
+    rect.setAttribute("stroke", col.stroke);
+    rect.setAttribute("stroke-width", "1.5");
+    rect.setAttribute("class", "node-rect");
+    g.appendChild(rect);
+
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    icon.setAttribute("x", pos.x + 12);
+    icon.setAttribute("y", pos.y + NODE_H / 2 + 1);
+    icon.setAttribute("dominant-baseline", "middle");
+    icon.setAttribute("font-size", "14");
+    icon.textContent = node.icon;
+    g.appendChild(icon);
+
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", pos.x + 30);
+    label.setAttribute("y", pos.y + NODE_H / 2);
+    label.setAttribute("dominant-baseline", "middle");
+    label.setAttribute("font-size", "11");
+    label.setAttribute("font-family", "Inter, system-ui, sans-serif");
+    label.setAttribute("fill", col.text);
+    label.setAttribute("font-weight", "500");
+    // Truncate if needed
+    const maxLen = 16;
+    label.textContent = node.label.length > maxLen ? node.label.slice(0, maxLen) + "…" : node.label;
+    g.appendChild(label);
+
+    nodesG.appendChild(g);
+  });
+
+  applyFlowHighlight(currentFlow);
+}
+
+function getEdgePath(fromId, toId) {
+  const from = positions[fromId];
+  const to = positions[toId];
+  if (!from || !to) return "";
+
+  const x1 = from.cx;
+  const y1 = from.cy + NODE_H / 2;
+  const x2 = to.cx;
+  const y2 = to.cy - NODE_H / 2;
+
+  // Same layer: curved
+  if (Math.abs(y1 - (to.cy + NODE_H / 2)) < 5) {
+    const mx = (x1 + x2) / 2;
+    const my = y1 - 40;
+    return `M${x1},${from.cy} Q${mx},${my} ${x2},${to.cy}`;
+  }
+
+  const dy = y2 - y1;
+  const cy1 = y1 + dy * 0.4;
+  const cy2 = y2 - dy * 0.4;
+  return `M${x1},${y1} C${x1},${cy1} ${x2},${cy2} ${x2},${y2}`;
+}
+
+let edgeCounter = 0;
+
+function drawEdge(container, fromId, toId, label, isActive, stepNum) {
+  const path = getEdgePath(fromId, toId);
+  if (!path) return null;
+
+  const from = positions[fromId];
+  const to = positions[toId];
+
+  const edgeId = `edge-${fromId}-${toId}-${++edgeCounter}`;
+
+  const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  pathEl.setAttribute("d", path);
+  pathEl.setAttribute("class", `edge-path${isActive ? " active" : ""}`);
+  pathEl.setAttribute("id", edgeId);
+  container.appendChild(pathEl);
+
+  if (label) {
+    const mx = (from.cx + to.cx) / 2;
+    const my = (from.cy + to.cy) / 2 - 8;
+
+    const labelEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    labelEl.setAttribute("x", mx);
+    labelEl.setAttribute("y", my);
+    labelEl.setAttribute("text-anchor", "middle");
+    labelEl.setAttribute("class", `edge-label${isActive ? " active" : ""}`);
+    labelEl.setAttribute("font-family", "Inter, system-ui, sans-serif");
+    const maxLen = 20;
+    labelEl.textContent = label.length > maxLen ? label.slice(0, maxLen) + "…" : label;
+    container.appendChild(labelEl);
+
+    if (isActive && stepNum > 0) {
+      const badge = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      badge.setAttribute("x", mx - 30);
+      badge.setAttribute("y", my - 2);
+      badge.setAttribute("text-anchor", "middle");
+      badge.setAttribute("class", "step-badge visible");
+      badge.setAttribute("font-family", "Inter, system-ui, sans-serif");
+      badge.textContent = stepNum;
+      container.appendChild(badge);
+    }
+  }
+
+  return pathEl;
+}
+
+function applyFlowHighlight(flow) {
+  // Reset all nodes
+  document.querySelectorAll(".node-group").forEach(g => {
+    g.classList.remove("dimmed", "highlighted");
+  });
+
+  // Rebuild edges
+  const edgesG = document.getElementById("edges-group");
+  if (!edgesG) return;
+  edgesG.innerHTML = "";
+
+  if (!flow) {
+    // Draw all base edges
+    const allEdges = new Set();
+    DATA.flows.forEach(f => {
+      f.steps.forEach(step => {
+        const key = [step.from, step.to].sort().join("--");
+        if (!allEdges.has(key)) {
+          allEdges.add(key);
+          drawEdge(edgesG, step.from, step.to, "", false, 0);
+        }
+      });
+    });
+    return;
+  }
+
+  // Get involved nodes
+  const involvedNodes = new Set();
+  flow.steps.forEach(s => { involvedNodes.add(s.from); involvedNodes.add(s.to); });
+
+  // Draw background edges dimmed
+  const allEdges = new Set();
+  DATA.flows.forEach(f => {
+    f.steps.forEach(step => {
+      const key = [step.from, step.to].sort().join("--");
+      if (!allEdges.has(key)) {
+        allEdges.add(key);
+        const p = drawEdge(edgesG, step.from, step.to, "", false, 0);
+        if (p) p.classList.add("dimmed");
+      }
+    });
+  });
+
+  // Draw active edges
+  flow.steps.forEach((step, i) => {
+    drawEdge(edgesG, step.from, step.to, step.label, true, i + 1);
+  });
+
+  // Dim/highlight nodes
+  document.querySelectorAll(".node-group").forEach(g => {
+    const id = g.id.replace("node-", "");
+    if (involvedNodes.has(id)) {
+      g.classList.add("highlighted");
+    } else {
+      g.classList.add("dimmed");
+    }
+  });
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function renderSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  sidebar.innerHTML = "";
+
+  const groups = {};
+  DATA.flows.forEach(flow => {
+    if (!groups[flow.group]) groups[flow.group] = [];
+    groups[flow.group].push(flow);
+  });
+
+  let globalIdx = 1;
+  Object.entries(groups).forEach(([group, flows]) => {
+    const label = document.createElement("div");
+    label.className = "group-label";
+    label.textContent = group;
+    sidebar.appendChild(label);
+
+    flows.forEach(flow => {
+      const chip = document.createElement("div");
+      chip.className = "flow-chip";
+      chip.dataset.flowId = flow.id;
+      chip.innerHTML = `<span class="chip-num">${globalIdx++}</span>${flow.name}`;
+      chip.addEventListener("click", () => selectFlow(flow.id));
+      sidebar.appendChild(chip);
+    });
+  });
+}
+
+// ============================================================
+// STEPS PANEL
+// ============================================================
+function renderSteps(flow) {
+  const title = document.getElementById("bottom-title");
+  const list = document.getElementById("steps-list");
+
+  if (!flow) {
+    title.textContent = "Selecione um fluxo para ver os passos";
+    list.innerHTML = '<div class="empty-state">Clique em qualquer fluxo no painel esquerdo para explorar o mapa operacional.</div>';
+    return;
+  }
+
+  title.textContent = `${flow.name} — ${flow.steps.length} passos`;
+  list.innerHTML = flow.steps.map((step, i) => {
+    const fromNode = DATA.nodes.find(n => n.id === step.from);
+    const toNode = DATA.nodes.find(n => n.id === step.to);
+    return `
+      <div class="step-item" style="animation-delay:${i * 0.05}s">
+        <div class="step-num">${i + 1}</div>
+        <div class="step-content">
+          <div class="step-path">
+            ${fromNode?.icon || ""} <strong>${fromNode?.label || step.from}</strong>
+            <span class="arrow">→</span>
+            ${toNode?.icon || ""} <strong>${toNode?.label || step.to}</strong>
+            <span class="step-label"> · ${step.label}</span>
+          </div>
+          <div class="step-note">${step.note}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ============================================================
+// INTERACTIONS
+// ============================================================
+function selectFlow(flowId) {
+  currentFlow = DATA.flows.find(f => f.id === flowId) || null;
+
+  document.querySelectorAll(".flow-chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.flowId === flowId);
+  });
+
+  applyFlowHighlight(currentFlow);
+  renderSteps(currentFlow);
+}
+
+function resetView() {
+  currentFlow = null;
+  document.querySelectorAll(".flow-chip").forEach(c => c.classList.remove("active"));
+  applyFlowHighlight(null);
+  renderSteps(null);
+}
+
+document.getElementById("btn-reset").addEventListener("click", resetView);
+document.getElementById("graph-container").addEventListener("click", e => {
+  if (e.target === e.currentTarget || e.target.id === "graph-svg") resetView();
+});
+
+// ============================================================
+// INIT + RESIZE
+// ============================================================
+function init() {
+  renderSidebar();
+  renderGraph();
+}
+
+window.addEventListener("resize", () => {
+  renderGraph();
+});
+
+// Wait for layout to settle
+requestAnimationFrame(() => {
+  requestAnimationFrame(init);
+});
+</script>
+</body>
+</html>
