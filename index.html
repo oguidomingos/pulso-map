@@ -275,6 +275,28 @@
   }
   .step-badge.visible { opacity: 1; }
 
+  /* Botão de menu (hambúrguer) — só aparece no mobile */
+  .btn-menu {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  /* Scrim escuro atrás da gaveta */
+  .scrim {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 40;
+  }
+  .scrim.show { display: block; }
+
   .layer-label {
     font-size: 10px;
     fill: var(--text-muted);
@@ -282,14 +304,90 @@
     text-transform: uppercase;
     font-weight: 600;
   }
+
+  /* ==================== RESPONSIVO / MOBILE ==================== */
+  @media (max-width: 820px) {
+    header { padding: 10px 14px; gap: 10px; flex-wrap: wrap; }
+    .btn-menu { display: block; }
+    .logo { font-size: 15px; }
+    .logo span { display: none; }
+    .legend { display: none; }          /* legenda vira conteúdo da gaveta */
+    .header-actions { margin-left: auto; }
+    .btn-reset { padding: 4px 10px; }
+
+    main { position: relative; }
+
+    /* Sidebar vira gaveta deslizante por cima do conteúdo */
+    .sidebar {
+      position: absolute;
+      top: 0; bottom: 0; left: 0;
+      z-index: 50;
+      width: 80%;
+      max-width: 300px;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    /* Grafo: rola horizontal e vertical com o dedo */
+    #graph-container {
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    #graph-svg { width: auto; height: auto; }
+
+    /* Painel de passos ganha mais espaço no celular */
+    .bottom-panel { height: 46vh; padding: 12px 14px; }
+    .step-item { font-size: 13px; }
+    .step-note { font-size: 12px; }
+    .center::after {
+      content: "← arraste o mapa →";
+      position: absolute;
+      top: 8px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: var(--text-muted);
+      background: var(--panel);
+      padding: 3px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      pointer-events: none;
+      opacity: 0.85;
+      z-index: 5;
+    }
+  }
+
+  .sidebar-legend { display: none; }
+  @media (max-width: 820px) {
+    .sidebar-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .sidebar-legend .legend-item { gap: 8px; }
+    .sidebar-legend .legend-dot { width: 10px; height: 10px; }
+  }
+
+  /* Alvos de toque maiores + sem hover-dependência em telas de toque */
+  @media (hover: none) {
+    .flow-chip { padding: 12px 16px; }
+    .btn-reset, .btn-menu { min-height: 36px; }
+  }
 </style>
 </head>
 <body>
 
 <header>
+  <button class="btn-menu" id="btn-menu" aria-label="Abrir fluxos">☰</button>
   <div class="logo">Pulso <span>— Mapa Operacional v2.0</span></div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:var(--team)"></div>Altair · Calil · Sérgio · Edu · Guilherme</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--team)"></div>Time</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--client)"></div>Cliente</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--platform)"></div>Plataformas & IA</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--deliverable)"></div>Entregável</div>
@@ -300,6 +398,7 @@
 </header>
 
 <main>
+  <div class="scrim" id="scrim"></div>
   <aside class="sidebar" id="sidebar"></aside>
 
   <div class="center">
@@ -481,7 +580,9 @@ function buildLayout(svgW, svgH) {
     const nodes = layers[layer];
     const y = padY + li * layerH + layerH / 2 - NODE_H / 2;
     const totalW = nodes.length * NODE_W + (nodes.length - 1) * 20;
-    const startX = (svgW - totalW) / 2;
+    // scroll mode (mobile): alinha à esquerda p/ todas as camadas começarem juntas.
+    // desktop (cabe): centraliza.
+    const startX = scrollMode ? padX : (svgW - totalW) / 2;
     nodes.forEach((n, i) => {
       positions[n.id] = {
         x: startX + i * (NODE_W + 20),
@@ -500,21 +601,44 @@ function buildLayout(svgW, svgH) {
 // ============================================================
 let currentFlow = null;
 let svgW = 0, svgH = 0;
+let scrollMode = false; // true quando o grafo é mais largo que a tela (mobile)
 let positions = {};
+
+function requiredWidth() {
+  // largura mínima pra caber a camada mais larga sem espremer os nós
+  const layers = ["team", "client", "platform", "deliverable"];
+  let max = 0;
+  layers.forEach(l => {
+    const n = DATA.nodes.filter(x => x.layer === l).length;
+    if (!n) return;
+    const w = n * NODE_W + (n - 1) * 20 + 120; // + padX*2
+    if (w > max) max = w;
+  });
+  return max;
+}
 
 function getSVGDimensions() {
   const container = document.getElementById("graph-container");
-  return { w: container.clientWidth, h: container.clientHeight };
+  const cw = container.clientWidth, ch = container.clientHeight;
+  // se não couber, o SVG cresce e o container faz scroll/pan (mobile)
+  const w = Math.max(cw, requiredWidth());
+  const h = Math.max(ch, 360);
+  return { w, h };
 }
 
 function renderGraph() {
   const svg = document.getElementById("graph-svg");
+  const container = document.getElementById("graph-container");
   const { w, h } = getSVGDimensions();
+  scrollMode = w > container.clientWidth + 1;
   svgW = w; svgH = h;
   positions = buildLayout(w, h);
 
+  // largura/altura explícitas p/ o container poder rolar quando maior que a tela
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  svg.innerHTML = "";
+  svg.replaceChildren();
 
   // Defs
   const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
@@ -528,12 +652,16 @@ function renderGraph() {
   `;
   svg.appendChild(defs);
 
-  // Layer labels
+  // Layer labels — derivados da 1ª ocorrência de cada camada (robusto a mudanças no DATA)
+  const firstOf = layer => {
+    const n = DATA.nodes.find(x => x.layer === layer);
+    return n && positions[n.id] ? positions[n.id].y - 18 : null;
+  };
   const layerLabels = [
-    { y: positions["altair"]?.y - 18, text: "Time Pulso" },
-    { y: positions["cliente"]?.y - 18, text: "Cliente" },
-    { y: positions["ia-agent"]?.y - 18, text: "Plataformas & IA" },
-    { y: positions["diagnostico"]?.y - 18, text: "Entregáveis" },
+    { y: firstOf("team"),        text: "Time Pulso" },
+    { y: firstOf("client"),      text: "Cliente" },
+    { y: firstOf("platform"),    text: "Plataformas & IA" },
+    { y: firstOf("deliverable"), text: "Entregáveis" },
   ];
   layerLabels.forEach(ll => {
     if (!ll.y) return;
@@ -749,7 +877,23 @@ function applyFlowHighlight(flow) {
 // ============================================================
 function renderSidebar() {
   const sidebar = document.getElementById("sidebar");
-  sidebar.innerHTML = "";
+  sidebar.replaceChildren();
+
+  // Legenda dentro da gaveta (visível só no mobile, via CSS)
+  const leg = document.createElement("div");
+  leg.className = "sidebar-legend";
+  [["--team","Time Pulso"],["--client","Cliente"],["--platform","Plataformas & IA"],["--deliverable","Entregável"]]
+    .forEach(([v,t]) => {
+      const row = document.createElement("div");
+      row.className = "legend-item";
+      const dot = document.createElement("div");
+      dot.className = "legend-dot";
+      dot.style.background = `var(${v})`;
+      row.appendChild(dot);
+      row.appendChild(document.createTextNode(t));
+      leg.appendChild(row);
+    });
+  sidebar.appendChild(leg);
 
   const groups = {};
   DATA.flows.forEach(flow => {
@@ -769,7 +913,7 @@ function renderSidebar() {
       chip.className = "flow-chip";
       chip.dataset.flowId = flow.id;
       chip.innerHTML = `<span class="chip-num">${globalIdx++}</span>${flow.name}`;
-      chip.addEventListener("click", () => selectFlow(flow.id));
+      chip.addEventListener("click", () => { selectFlow(flow.id); closeDrawer(); });
       sidebar.appendChild(chip);
     });
   });
@@ -834,6 +978,14 @@ document.getElementById("btn-reset").addEventListener("click", resetView);
 document.getElementById("graph-container").addEventListener("click", e => {
   if (e.target === e.currentTarget || e.target.id === "graph-svg") resetView();
 });
+
+// ── Gaveta (mobile) ──
+const sidebarEl = document.getElementById("sidebar");
+const scrimEl = document.getElementById("scrim");
+function openDrawer() { sidebarEl.classList.add("open"); scrimEl.classList.add("show"); }
+function closeDrawer() { sidebarEl.classList.remove("open"); scrimEl.classList.remove("show"); }
+document.getElementById("btn-menu").addEventListener("click", openDrawer);
+scrimEl.addEventListener("click", closeDrawer);
 
 // ============================================================
 // INIT + RESIZE
