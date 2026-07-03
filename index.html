@@ -151,13 +151,59 @@
     flex: 1;
     overflow: hidden;
     position: relative;
-    cursor: pointer;
+    cursor: grab;
+    touch-action: none;          /* nós tratamos pan/zoom no JS */
   }
+  #graph-container.grabbing { cursor: grabbing; }
 
   #graph-svg {
     width: 100%;
     height: 100%;
+    display: block;
   }
+
+  /* Controles de zoom */
+  .zoom-controls {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 10;
+  }
+  .zoom-controls button {
+    width: 38px; height: 38px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .zoom-controls button:hover { border-color: var(--accent); color: var(--accent); }
+  .zoom-controls button:active { transform: scale(0.94); }
+
+  .graph-hint {
+    position: absolute;
+    top: 12px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--panel);
+    padding: 4px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    pointer-events: none;
+    z-index: 6;
+    opacity: 0.9;
+    transition: opacity 0.4s;
+  }
+  .graph-hint.hide { opacity: 0; }
 
   /* BOTTOM PANEL */
   .bottom-panel {
@@ -330,32 +376,11 @@
     }
     .sidebar.open { transform: translateX(0); }
 
-    /* Grafo: rola horizontal e vertical com o dedo */
-    #graph-container {
-      overflow: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    #graph-svg { width: auto; height: auto; }
-
     /* Painel de passos ganha mais espaço no celular */
-    .bottom-panel { height: 46vh; padding: 12px 14px; }
+    .bottom-panel { height: 42vh; padding: 12px 14px; }
     .step-item { font-size: 13px; }
     .step-note { font-size: 12px; }
-    .center::after {
-      content: "← arraste o mapa →";
-      position: absolute;
-      top: 8px; left: 50%;
-      transform: translateX(-50%);
-      font-size: 10px;
-      color: var(--text-muted);
-      background: var(--panel);
-      padding: 3px 10px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      pointer-events: none;
-      opacity: 0.85;
-      z-index: 5;
-    }
+    .zoom-controls button { width: 42px; height: 42px; }
   }
 
   .sidebar-legend { display: none; }
@@ -404,6 +429,12 @@
   <div class="center">
     <div id="graph-container">
       <svg id="graph-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="zoom-controls">
+        <button id="zoom-in" aria-label="Aproximar">+</button>
+        <button id="zoom-out" aria-label="Afastar">−</button>
+        <button id="zoom-fit" aria-label="Ajustar à tela">⤢</button>
+      </div>
+      <div class="graph-hint" id="graph-hint">arraste p/ mover · role p/ zoom</div>
     </div>
     <div class="bottom-panel">
       <div class="bottom-title" id="bottom-title">Selecione um fluxo para ver os passos</div>
@@ -558,86 +589,85 @@ const LAYER_COLORS = {
   deliverable: { fill: "#3a2a1a", stroke: "#ffb84a", text: "#ffd080" },
 };
 
-const NODE_W = 130;
-const NODE_H = 44;
+const NODE_W = 172;
+const NODE_H = 54;
+const GAP_X = 30;      // espaço entre nós na mesma camada
+const LAYER_GAP = 150; // distância vertical entre camadas
+const PAD = 70;        // margem do "mundo"
 
-function buildLayout(svgW, svgH) {
-  const padX = 60;
-  const padY = 50;
-  const layerH = (svgH - padY * 2) / 4;
+let worldW = 0, worldH = 0;
 
-  const layers = {
-    team:        DATA.nodes.filter(n => n.layer === "team"),
-    client:      DATA.nodes.filter(n => n.layer === "client"),
-    platform:    DATA.nodes.filter(n => n.layer === "platform"),
-    deliverable: DATA.nodes.filter(n => n.layer === "deliverable"),
-  };
+// Layout em coordenadas de "mundo" fixas (independem da tela — o zoom/pan cuida do resto)
+function buildLayout() {
+  const layerOrder = ["team", "client", "platform", "deliverable"];
+  const layers = {};
+  layerOrder.forEach(l => layers[l] = DATA.nodes.filter(n => n.layer === l));
+
+  // largura do mundo = camada mais larga
+  let maxRow = 0;
+  layerOrder.forEach(l => {
+    const n = layers[l].length;
+    if (n) maxRow = Math.max(maxRow, n * NODE_W + (n - 1) * GAP_X);
+  });
+  worldW = maxRow + PAD * 2;
+  worldH = PAD * 2 + (layerOrder.length - 1) * (NODE_H + LAYER_GAP) + NODE_H;
 
   const positions = {};
-  const layerOrder = ["team", "client", "platform", "deliverable"];
-
   layerOrder.forEach((layer, li) => {
     const nodes = layers[layer];
-    const y = padY + li * layerH + layerH / 2 - NODE_H / 2;
-    const totalW = nodes.length * NODE_W + (nodes.length - 1) * 20;
-    // scroll mode (mobile): alinha à esquerda p/ todas as camadas começarem juntas.
-    // desktop (cabe): centraliza.
-    const startX = scrollMode ? padX : (svgW - totalW) / 2;
+    const rowW = nodes.length * NODE_W + (nodes.length - 1) * GAP_X;
+    const startX = (worldW - rowW) / 2; // centraliza cada camada no mundo
+    const y = PAD + li * (NODE_H + LAYER_GAP);
     nodes.forEach((n, i) => {
-      positions[n.id] = {
-        x: startX + i * (NODE_W + 20),
-        y,
-        cx: startX + i * (NODE_W + 20) + NODE_W / 2,
-        cy: y + NODE_H / 2,
-      };
+      const x = startX + i * (NODE_W + GAP_X);
+      positions[n.id] = { x, y, cx: x + NODE_W / 2, cy: y + NODE_H / 2 };
     });
   });
-
   return positions;
 }
 
 // ============================================================
-// RENDER
+// RENDER + VIEWPORT (pan/zoom)
 // ============================================================
 let currentFlow = null;
-let svgW = 0, svgH = 0;
-let scrollMode = false; // true quando o grafo é mais largo que a tela (mobile)
 let positions = {};
+let vp = null;                     // <g> transformado (viewport)
+const view = { x: 0, y: 0, k: 1 }; // pan (x,y) + zoom (k)
+const K_MIN = 0.25, K_MAX = 2.5;
 
-function requiredWidth() {
-  // largura mínima pra caber a camada mais larga sem espremer os nós
-  const layers = ["team", "client", "platform", "deliverable"];
-  let max = 0;
-  layers.forEach(l => {
-    const n = DATA.nodes.filter(x => x.layer === l).length;
-    if (!n) return;
-    const w = n * NODE_W + (n - 1) * 20 + 120; // + padX*2
-    if (w > max) max = w;
-  });
-  return max;
+function applyTransform() {
+  if (vp) vp.setAttribute("transform", `translate(${view.x},${view.y}) scale(${view.k})`);
 }
 
-function getSVGDimensions() {
-  const container = document.getElementById("graph-container");
-  const cw = container.clientWidth, ch = container.clientHeight;
-  // se não couber, o SVG cresce e o container faz scroll/pan (mobile)
-  const w = Math.max(cw, requiredWidth());
-  const h = Math.max(ch, 360);
-  return { w, h };
+function fitView() {
+  const c = document.getElementById("graph-container");
+  const cw = c.clientWidth, ch = c.clientHeight;
+  if (!cw || !ch) return;
+  const k = Math.min(cw / worldW, ch / worldH) * 0.95;
+  view.k = Math.max(K_MIN, Math.min(K_MAX, k));
+  view.x = (cw - worldW * view.k) / 2;
+  view.y = (ch - worldH * view.k) / 2;
+  applyTransform();
+}
+
+function zoomAt(cx, cy, factor) {
+  const nk = Math.max(K_MIN, Math.min(K_MAX, view.k * factor));
+  const r = nk / view.k;
+  view.x = cx - (cx - view.x) * r;
+  view.y = cy - (cy - view.y) * r;
+  view.k = nk;
+  applyTransform();
 }
 
 function renderGraph() {
   const svg = document.getElementById("graph-svg");
   const container = document.getElementById("graph-container");
-  const { w, h } = getSVGDimensions();
-  scrollMode = w > container.clientWidth + 1;
-  svgW = w; svgH = h;
-  positions = buildLayout(w, h);
+  positions = buildLayout();
 
-  // largura/altura explícitas p/ o container poder rolar quando maior que a tela
-  svg.setAttribute("width", w);
-  svg.setAttribute("height", h);
-  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  // SVG preenche o container; a navegação é via transform no viewport
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+  svg.setAttribute("viewBox", `0 0 ${container.clientWidth} ${container.clientHeight}`);
   svg.replaceChildren();
 
   // Defs
@@ -651,6 +681,11 @@ function renderGraph() {
     </marker>
   `;
   svg.appendChild(defs);
+
+  // Viewport — tudo que sofre pan/zoom vive aqui dentro
+  vp = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  vp.id = "viewport";
+  svg.appendChild(vp);
 
   // Layer labels — derivados da 1ª ocorrência de cada camada (robusto a mudanças no DATA)
   const firstOf = layer => {
@@ -666,22 +701,22 @@ function renderGraph() {
   layerLabels.forEach(ll => {
     if (!ll.y) return;
     const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    t.setAttribute("x", 20);
+    t.setAttribute("x", PAD - 40);
     t.setAttribute("y", ll.y + 14);
     t.setAttribute("class", "layer-label");
     t.textContent = ll.text;
-    svg.appendChild(t);
+    vp.appendChild(t);
   });
 
   // Edges group
   const edgesG = document.createElementNS("http://www.w3.org/2000/svg", "g");
   edgesG.id = "edges-group";
-  svg.appendChild(edgesG);
+  vp.appendChild(edgesG);
 
   // Nodes group
   const nodesG = document.createElementNS("http://www.w3.org/2000/svg", "g");
   nodesG.id = "nodes-group";
-  svg.appendChild(nodesG);
+  vp.appendChild(nodesG);
 
   // Draw all base edges (faint background)
   const allEdges = new Set();
@@ -718,30 +753,55 @@ function renderGraph() {
     g.appendChild(rect);
 
     const icon = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    icon.setAttribute("x", pos.x + 12);
+    icon.setAttribute("x", pos.x + 14);
     icon.setAttribute("y", pos.y + NODE_H / 2 + 1);
     icon.setAttribute("dominant-baseline", "middle");
-    icon.setAttribute("font-size", "14");
+    icon.setAttribute("font-size", "17");
     icon.textContent = node.icon;
     g.appendChild(icon);
 
+    // Label — sem truncar; quebra em até 2 linhas
+    const lines = wrapLabel(node.label, 18);
+    const textX = pos.x + 38;
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("x", pos.x + 30);
-    label.setAttribute("y", pos.y + NODE_H / 2);
-    label.setAttribute("dominant-baseline", "middle");
-    label.setAttribute("font-size", "11");
+    label.setAttribute("x", textX);
+    label.setAttribute("font-size", "12.5");
     label.setAttribute("font-family", "Inter, system-ui, sans-serif");
     label.setAttribute("fill", col.text);
-    label.setAttribute("font-weight", "500");
-    // Truncate if needed
-    const maxLen = 16;
-    label.textContent = node.label.length > maxLen ? node.label.slice(0, maxLen) + "…" : node.label;
+    label.setAttribute("font-weight", "600");
+    const lineH = 14;
+    const startY = pos.y + NODE_H / 2 - (lines.length - 1) * lineH / 2;
+    lines.forEach((ln, i) => {
+      const ts = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      ts.setAttribute("x", textX);
+      ts.setAttribute("y", startY + i * lineH);
+      ts.setAttribute("dominant-baseline", "middle");
+      ts.textContent = ln;
+      label.appendChild(ts);
+    });
     g.appendChild(label);
 
     nodesG.appendChild(g);
   });
 
   applyFlowHighlight(currentFlow);
+}
+
+// Quebra o label em até 2 linhas, priorizando cortar num espaço.
+function wrapLabel(text, maxPerLine) {
+  if (text.length <= maxPerLine) return [text];
+  const words = text.split(" ");
+  const l1 = [], l2 = [];
+  let cur = l1;
+  for (const w of words) {
+    if (cur === l1 && (l1.join(" ").length + w.length + 1) > maxPerLine && l1.length) cur = l2;
+    cur.push(w);
+  }
+  let line1 = l1.join(" "), line2 = l2.join(" ");
+  if (!line2) return [line1];
+  // 2ª linha não pode estourar — trunca só em último caso
+  if (line2.length > maxPerLine + 4) line2 = line2.slice(0, maxPerLine + 3) + "…";
+  return [line1, line2];
 }
 
 function getEdgePath(fromId, toId) {
@@ -975,9 +1035,82 @@ function resetView() {
 }
 
 document.getElementById("btn-reset").addEventListener("click", resetView);
-document.getElementById("graph-container").addEventListener("click", e => {
-  if (e.target === e.currentTarget || e.target.id === "graph-svg") resetView();
+
+// ============================================================
+// PAN + ZOOM
+// ============================================================
+const graphEl = document.getElementById("graph-container");
+
+let hintShown = true;
+function hideHint() {
+  if (!hintShown) return;
+  hintShown = false;
+  const h = document.getElementById("graph-hint");
+  if (h) { h.classList.add("hide"); setTimeout(() => h.remove(), 500); }
+}
+
+// Zoom com a roda do mouse (para o cursor)
+graphEl.addEventListener("wheel", e => {
+  e.preventDefault();
+  hideHint();
+  const r = graphEl.getBoundingClientRect();
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  zoomAt(e.clientX - r.left, e.clientY - r.top, factor);
+}, { passive: false });
+
+// Arrastar p/ pan + distinguir de clique (pra resetar só em clique limpo)
+let dragging = false, moved = false, sx = 0, sy = 0, ox = 0, oy = 0;
+graphEl.addEventListener("pointerdown", e => {
+  if (e.button !== 0 && e.pointerType === "mouse") return;
+  hideHint();
+  dragging = true; moved = false;
+  sx = e.clientX; sy = e.clientY; ox = view.x; oy = view.y;
+  graphEl.setPointerCapture(e.pointerId);
+  graphEl.classList.add("grabbing");
 });
+graphEl.addEventListener("pointermove", e => {
+  if (!dragging) return;
+  const dx = e.clientX - sx, dy = e.clientY - sy;
+  if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
+  view.x = ox + dx; view.y = oy + dy;
+  applyTransform();
+});
+function endDrag(e) {
+  if (!dragging) return;
+  dragging = false;
+  graphEl.classList.remove("grabbing");
+  // clique limpo no fundo => reset da seleção
+  const onBg = e.target === graphEl || e.target.id === "graph-svg" || e.target.id === "viewport";
+  if (!moved && onBg) resetView();
+}
+graphEl.addEventListener("pointerup", endDrag);
+graphEl.addEventListener("pointercancel", () => { dragging = false; graphEl.classList.remove("grabbing"); });
+
+// Pinça (2 dedos) no mobile
+let pinchDist = 0;
+graphEl.addEventListener("touchmove", e => {
+  if (e.touches.length !== 2) return;
+  e.preventDefault();
+  const [a, b] = e.touches;
+  const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  if (pinchDist) {
+    const r = graphEl.getBoundingClientRect();
+    const mx = (a.clientX + b.clientX) / 2 - r.left;
+    const my = (a.clientY + b.clientY) / 2 - r.top;
+    zoomAt(mx, my, d / pinchDist);
+  }
+  pinchDist = d;
+}, { passive: false });
+graphEl.addEventListener("touchend", () => { pinchDist = 0; });
+
+// Botões de zoom
+function zoomCenter(factor) {
+  const r = graphEl.getBoundingClientRect();
+  zoomAt(r.width / 2, r.height / 2, factor);
+}
+document.getElementById("zoom-in").addEventListener("click", () => zoomCenter(1.25));
+document.getElementById("zoom-out").addEventListener("click", () => zoomCenter(1 / 1.25));
+document.getElementById("zoom-fit").addEventListener("click", fitView);
 
 // ── Gaveta (mobile) ──
 const sidebarEl = document.getElementById("sidebar");
@@ -993,10 +1126,13 @@ scrimEl.addEventListener("click", closeDrawer);
 function init() {
   renderSidebar();
   renderGraph();
+  fitView();
 }
 
+let resizeT = null;
 window.addEventListener("resize", () => {
-  renderGraph();
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => { renderGraph(); fitView(); }, 120);
 });
 
 // Wait for layout to settle
