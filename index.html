@@ -138,6 +138,25 @@
   }
   .flow-chip.active .chip-num { background: var(--accent); color: #fff; }
 
+  /* Alças de redimensionamento */
+  .resizer-x {
+    width: 6px;
+    flex-shrink: 0;
+    background: var(--border);
+    cursor: col-resize;
+    transition: background 0.15s;
+  }
+  .resizer-x:hover, .resizer-x.active { background: var(--accent); }
+
+  .resizer-y {
+    height: 6px;
+    flex-shrink: 0;
+    background: var(--border);
+    cursor: row-resize;
+    transition: background 0.15s;
+  }
+  .resizer-y:hover, .resizer-y.active { background: var(--accent); }
+
   /* CENTER */
   .center {
     flex: 1;
@@ -271,7 +290,7 @@
   }
 
   /* SVG Nodes */
-  .node-group { cursor: default; transition: opacity 0.3s; }
+  .node-group { cursor: pointer; transition: opacity 0.3s; }
   .node-group.dimmed { opacity: 0.15; }
   .node-group.highlighted { opacity: 1; }
 
@@ -381,6 +400,7 @@
     .step-item { font-size: 13px; }
     .step-note { font-size: 12px; }
     .zoom-controls button { width: 42px; height: 42px; }
+    .resizer-x, .resizer-y { display: none; } /* sem redimensionar no celular */
   }
 
   .sidebar-legend { display: none; }
@@ -425,6 +445,7 @@
 <main>
   <div class="scrim" id="scrim"></div>
   <aside class="sidebar" id="sidebar"></aside>
+  <div class="resizer-x" id="resizer-x" title="Arraste para redimensionar"></div>
 
   <div class="center">
     <div id="graph-container">
@@ -436,6 +457,7 @@
       </div>
       <div class="graph-hint" id="graph-hint">arraste p/ mover · role p/ zoom</div>
     </div>
+    <div class="resizer-y" id="resizer-y" title="Arraste para redimensionar"></div>
     <div class="bottom-panel">
       <div class="bottom-title" id="bottom-title">Selecione um fluxo para ver os passos</div>
       <div class="steps-list" id="steps-list">
@@ -1058,30 +1080,37 @@ graphEl.addEventListener("wheel", e => {
   zoomAt(e.clientX - r.left, e.clientY - r.top, factor);
 }, { passive: false });
 
-// Arrastar p/ pan + distinguir de clique (pra resetar só em clique limpo)
+// Arrastar p/ pan. Só captura o ponteiro depois de mover (assim o clique chega no nó).
 let dragging = false, moved = false, sx = 0, sy = 0, ox = 0, oy = 0;
 graphEl.addEventListener("pointerdown", e => {
   if (e.button !== 0 && e.pointerType === "mouse") return;
   hideHint();
   dragging = true; moved = false;
   sx = e.clientX; sy = e.clientY; ox = view.x; oy = view.y;
-  graphEl.setPointerCapture(e.pointerId);
-  graphEl.classList.add("grabbing");
 });
 graphEl.addEventListener("pointermove", e => {
   if (!dragging) return;
   const dx = e.clientX - sx, dy = e.clientY - sy;
-  if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
-  view.x = ox + dx; view.y = oy + dy;
-  applyTransform();
+  if (!moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+    moved = true;
+    graphEl.setPointerCapture(e.pointerId);
+    graphEl.classList.add("grabbing");
+  }
+  if (moved) { view.x = ox + dx; view.y = oy + dy; applyTransform(); }
 });
 function endDrag(e) {
   if (!dragging) return;
   dragging = false;
   graphEl.classList.remove("grabbing");
-  // clique limpo no fundo => reset da seleção
-  const onBg = e.target === graphEl || e.target.id === "graph-svg" || e.target.id === "viewport";
-  if (!moved && onBg) resetView();
+  if (moved) return; // foi arrasto, não clique
+  // Clique num nó → seleciona o fluxo que passa por ele. Clique no vazio → nada.
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const ng = el && el.closest && el.closest(".node-group");
+  if (ng) {
+    const id = ng.id.replace("node-", "");
+    const flow = DATA.flows.find(f => f.steps.some(s => s.from === id || s.to === id));
+    if (flow) selectFlow(flow.id);
+  }
 }
 graphEl.addEventListener("pointerup", endDrag);
 graphEl.addEventListener("pointercancel", () => { dragging = false; graphEl.classList.remove("grabbing"); });
@@ -1112,6 +1141,77 @@ document.getElementById("zoom-in").addEventListener("click", () => zoomCenter(1.
 document.getElementById("zoom-out").addEventListener("click", () => zoomCenter(1 / 1.25));
 document.getElementById("zoom-fit").addEventListener("click", fitView);
 
+// ============================================================
+// PAINÉIS REDIMENSIONÁVEIS (com tamanho persistente)
+// ============================================================
+// Atualiza só o viewBox (mantém zoom/pan) quando o container muda de tamanho
+function updateViewBox() {
+  const c = document.getElementById("graph-container");
+  document.getElementById("graph-svg")
+    .setAttribute("viewBox", `0 0 ${c.clientWidth} ${c.clientHeight}`);
+}
+
+const sidebarResize = document.getElementById("sidebar");
+const bottomPanel = document.querySelector(".bottom-panel");
+
+// Alça vertical → largura da sidebar
+(() => {
+  const rx = document.getElementById("resizer-x");
+  let on = false;
+  rx.addEventListener("pointerdown", e => {
+    on = true; rx.classList.add("active");
+    try { rx.setPointerCapture(e.pointerId); } catch (_) {}
+    e.preventDefault();
+  });
+  rx.addEventListener("pointermove", e => {
+    if (!on) return;
+    const w = Math.max(180, Math.min(520, e.clientX));
+    sidebarResize.style.width = w + "px";
+    updateViewBox();
+  });
+  const stop = () => {
+    if (!on) return;
+    on = false; rx.classList.remove("active");
+    localStorage.setItem("pm-sidebar-w", sidebarResize.style.width);
+  };
+  rx.addEventListener("pointerup", stop);
+  rx.addEventListener("pointercancel", stop);
+})();
+
+// Alça horizontal → altura do painel de baixo
+(() => {
+  const ry = document.getElementById("resizer-y");
+  let on = false;
+  ry.addEventListener("pointerdown", e => {
+    on = true; ry.classList.add("active");
+    try { ry.setPointerCapture(e.pointerId); } catch (_) {}
+    e.preventDefault();
+  });
+  ry.addEventListener("pointermove", e => {
+    if (!on) return;
+    const h = Math.max(90, Math.min(window.innerHeight * 0.75, window.innerHeight - e.clientY));
+    bottomPanel.style.height = h + "px";
+    updateViewBox();
+  });
+  const stop = () => {
+    if (!on) return;
+    on = false; ry.classList.remove("active");
+    localStorage.setItem("pm-panel-h", bottomPanel.style.height);
+  };
+  ry.addEventListener("pointerup", stop);
+  ry.addEventListener("pointercancel", stop);
+})();
+
+// Restaura tamanhos salvos (só no desktop; no mobile a sidebar é gaveta)
+function restorePanelSizes() {
+  if (window.innerWidth > 820) {
+    const sw = localStorage.getItem("pm-sidebar-w");
+    if (sw) sidebarResize.style.width = sw;
+  }
+  const ph = localStorage.getItem("pm-panel-h");
+  if (ph) bottomPanel.style.height = ph;
+}
+
 // ── Gaveta (mobile) ──
 const sidebarEl = document.getElementById("sidebar");
 const scrimEl = document.getElementById("scrim");
@@ -1124,6 +1224,7 @@ scrimEl.addEventListener("click", closeDrawer);
 // INIT + RESIZE
 // ============================================================
 function init() {
+  restorePanelSizes();
   renderSidebar();
   renderGraph();
   fitView();
