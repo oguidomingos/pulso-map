@@ -430,7 +430,7 @@
 
 <header>
   <button class="btn-menu" id="btn-menu" aria-label="Abrir fluxos">☰</button>
-  <div class="logo">Pulso <span>— Mapa Operacional v2.0</span></div>
+  <div class="logo">Pulso <span>— Operação Vertical v3 · jornada completa</span></div>
   <div class="legend">
     <div class="legend-item"><div class="legend-dot" style="background:var(--team)"></div>Time</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--client)"></div>Cliente</div>
@@ -473,129 +473,297 @@
 // ============================================================
 const DATA = {
   nodes: [
-    // Team — revisores humanos (regra DES-335: IA executa, humano aprova)
-    { id: "altair",    label: "Altair",            layer: "team", icon: "👤" },
-    { id: "calil",     label: "Calil",             layer: "team", icon: "🤝" },
-    { id: "sergio",    label: "Serginho",          layer: "team", icon: "📊" },
-    { id: "edu",       label: "Eduardo",           layer: "team", icon: "🎨" },
-    { id: "guilherme", label: "Guilherme",         layer: "team", icon: "💻" },
-    // Client
-    { id: "cliente",   label: "Cliente (Médico)",  layer: "client", icon: "🏥" },
-    // Platform — sistemas vivos na VPS
-    { id: "lp",        label: "LP do cliente",     layer: "platform", icon: "🌐" },
-    { id: "webhook",   label: "lead-webhook :3020",layer: "platform", icon: "⚙️" },
-    { id: "sheets",    label: "Planilhas P1+P2",   layer: "platform", icon: "📄" },
-    { id: "crm",       label: "Frappe CRM",        layer: "platform", icon: "📇" },
-    { id: "drive",     label: "Drive (01-Onboarding)", layer: "platform", icon: "📁" },
-    { id: "brain",     label: "account-brain (repo)", layer: "platform", icon: "🐙" },
-    { id: "paperclip", label: "Paperclip (agentes)", layer: "platform", icon: "🤖" },
-    { id: "docuseal",  label: "DocuSeal",          layer: "platform", icon: "✍️" },
-    { id: "invoice",   label: "Invoice Ninja",     layer: "platform", icon: "💳" },
-    { id: "plane",     label: "Plane · Operacional", layer: "platform", icon: "📋" },
-    { id: "gads",      label: "Google Ads (MCC)",  layer: "platform", icon: "🔍" },
-    { id: "meta",      label: "Meta Ads",          layer: "platform", icon: "📱" },
-    { id: "bento",     label: "Bento (link-in-bio)", layer: "platform", icon: "🍱" },
-    { id: "evolution", label: "Evolution / WhatsApp", layer: "platform", icon: "💬" },
-    { id: "affine",    label: "Affine (board)",    layer: "platform", icon: "🧠" },
-    // Deliverables
-    { id: "proposta",  label: "Proposta padrão Pulso", layer: "deliverable", icon: "🎯" },
-    { id: "estrategia",label: "Diagnóstico 12 etapas", layer: "deliverable", icon: "🧭" },
-    { id: "campanhas", label: "Campanhas ativas",  layer: "deliverable", icon: "🚀" },
-    { id: "relatorio", label: "Relatório semanal", layer: "deliverable", icon: "📊" },
+    // ── Time Pulso (revisores humanos — regra DES-335: IA executa, humano aprova) ──
+    { id: "altair",    label: "Altair · SDR",           layer: "team", icon: "📞" },
+    { id: "calil",     label: "Calil · Closer/CS",      layer: "team", icon: "🤝" },
+    { id: "sergio",    label: "Serginho · Tráfego",     layer: "team", icon: "📊" },
+    { id: "edu",       label: "Eduardo · Design",       layer: "team", icon: "🎨" },
+    { id: "guilherme", label: "Guilherme · Eng/IA",     layer: "team", icon: "💻" },
+
+    // ── Cliente e o lead DELE ──
+    { id: "cliente",   label: "Cliente (Médico)",       layer: "client", icon: "🏥" },
+    { id: "paciente",  label: "Paciente (lead do cliente)", layer: "client", icon: "🧑" },
+
+    // ── Plataformas & IA ──
+    { id: "whatsapp",  label: "WhatsApp",               layer: "platform", icon: "💬" },
+    { id: "crm",       label: "Frappe CRM",             layer: "platform", icon: "📇" },
+    { id: "drive",     label: "Drive · AIS Layer A",    layer: "platform", icon: "📁" },
+    { id: "brain",     label: "account-brain (GitHub)", layer: "platform", icon: "🐙" },
+    { id: "paperclip", label: "Paperclip · agentes IA", layer: "platform", icon: "🤖" },
+    { id: "docuseal",  label: "DocuSeal",               layer: "platform", icon: "✍️" },
+    { id: "invoice",   label: "Invoice Ninja",          layer: "platform", icon: "💳" },
+    { id: "plane",     label: "Plane · 3 boards",       layer: "platform", icon: "📋" },
+    { id: "gads",      label: "Google Ads",             layer: "platform", icon: "🔍" },
+    { id: "meta",      label: "Meta BM / Ads",          layer: "platform", icon: "📱" },
+    { id: "analytics", label: "GA4 + Pixel + GTM",      layer: "platform", icon: "📈" },
+    { id: "instagram", label: "Instagram + GMB",        layer: "platform", icon: "📸" },
+    { id: "bento",     label: "Bento (link-in-bio)",    layer: "platform", icon: "🍱" },
+    { id: "agendador", label: "Meta Suite / Later",     layer: "platform", icon: "📅" },
+    { id: "lp",        label: "LP do cliente",          layer: "platform", icon: "🌐" },
+    { id: "webhook",   label: "lead-webhook + Planilhas", layer: "platform", icon: "⚙️" },
+    { id: "bot",       label: "Typebot + Evolution",    layer: "platform", icon: "⚡" },
+    { id: "looker",    label: "Looker Studio",          layer: "platform", icon: "📉" },
+    { id: "aura",      label: "Aura System",            layer: "platform", icon: "🏆" },
+
+    // ── Entregáveis ──
+    { id: "dossie",     label: "Dossiê do lead",        layer: "deliverable", icon: "🗂️" },
+    { id: "proposta",   label: "Proposta preview Pulso", layer: "deliverable", icon: "🎯" },
+    { id: "contrato",   label: "Contrato assinado",     layer: "deliverable", icon: "📜" },
+    { id: "des335art",  label: "12 artefatos DES-335",  layer: "deliverable", icon: "🧭" },
+    { id: "miv",        label: "MIV / Brand guide",     layer: "deliverable", icon: "🖌️" },
+    { id: "site",       label: "Site premium",          layer: "deliverable", icon: "🏛️" },
+    { id: "lp-ar",      label: "LP no ar (rastreada)",  layer: "deliverable", icon: "🚀" },
+    { id: "vitrine",    label: "Vitrine IG + GMB",      layer: "deliverable", icon: "✨" },
+    { id: "campanhas",  label: "Campanhas ativas",      layer: "deliverable", icon: "📣" },
+    { id: "conteudo",   label: "Conteúdo do mês",       layer: "deliverable", icon: "🎬" },
+    { id: "rel-sem",    label: "Relatório semanal",     layer: "deliverable", icon: "📊" },
+    { id: "rel-mes",    label: "Relatório mensal / 90d", layer: "deliverable", icon: "📑" },
+    { id: "bot-ar",     label: "Bot IA no ar",          layer: "deliverable", icon: "🛎️" },
   ],
 
   flows: [
-    // ─── COMERCIAL ───
+    // ═══════════ 1 · COMERCIAL ═══════════
     {
-      id: "captacao",
-      name: "Captação de leads (✅ automatizado)",
-      group: "Comercial",
+      id: "c1-c5",
+      name: "C1–C5 · Prospecção → Fechamento",
+      group: "1 · Comercial",
       steps: [
-        { from: "cliente",  to: "lp",      label: "✅ Tráfego chega na LP",       note: "LPs multi-página por região (ex.: /joelho, /coluna). UTMs completas na URL" },
-        { from: "lp",       to: "webhook", label: "✅ Form → webhook unificado",  note: "leads.pulso.marketing → :3020. Dedup 5min por telefone+página. Blindado contra testes (curl/TESTE nunca contam)" },
-        { from: "webhook",  to: "sheets",  label: "✅ Grava P1 (LEADS) + P2 (DADOS)", note: "P1 = operacional da secretária. P2 = tracking completo (utm, campaign_id, ad_id, gclid). Conciliação por LEAD_ID auditada" },
-        { from: "sheets",   to: "crm",     label: "🟡 Lead no CRM",               note: "onboard-init.sh cria lead no Frappe. Follow-up de proposta sem resposta ainda é manual (gap)" },
+        { from: "cliente", to: "crm", label: "🔴 C1 — Origem do lead", note: "Indicação do Eduardo (parceiro externo de networking) ou inbound. Lead registrado no CRM (board Comercial do Plane: Backlog → Qualificação SDR). Fonte: SOP Máquina Comercial" },
+        { from: "altair", to: "dossie", label: "🔴 C1.5 — Auditoria expressa (5min)", note: "Antes do contato: IG, bio, GMB/Doctoralia — 1 elogio + 1 problema identificado. Vira nota de inteligência. Fonte: Workflow Prospecção Médica" },
+        { from: "altair", to: "whatsapp", label: "🔴 C2 — Primeiro contato", note: "WhatsApp citando Eduardo como referência. Tom: parceiro de negócio, não vendedor. Objetivo: vender a REUNIÃO, não o serviço — agendar ligação de 5–10min" },
+        { from: "altair", to: "dossie", label: "🔴 C3 — Ligação de qualificação", note: "5–7min: especialidade, procedimento-herói, objetivo 90d, diferencial (headline), estilo visual, CTA, @Instagram. Dossiê repassado ao time. Gravação → Drive/01-Onboarding → sync-triagem.sh (30min) desce pro brain ✅" },
+        { from: "guilherme", to: "proposta", label: "🟡 C4 — Proposta com preview", note: "Web-builder (Paperclip) gera pela skill proposta-preview: id visual Pulso, 10 seções, benchmark de CPA real da MCC, insumo = transcrição da triagem. Gate DES-335: revisão Guilherme + aprovação Calil antes de chegar ao prospect" },
+        { from: "calil", to: "cliente", label: "🔴 C5 — Reunião de fechamento", note: "Good Cop/Business Cop: aula de posicionamento → choque de realidade (busca Google ao vivo) → preview WOW com foto real do médico → pitch ancorado → fechamento na mesa (isenção de setup). Fonte: Playbook Fechamento e Resgate" },
+        { from: "cliente", to: "contrato", label: "🔴 Assinatura + data de onboarding", note: "Contrato via DocuSeal. KPIs comerciais: ligação→proposta ≥60% · proposta→fechamento ≥40% · C3→contrato ≤7 dias" },
       ]
     },
     {
-      id: "proposta-flow",
-      name: "Triagem → Proposta (🟡 padrão novo)",
-      group: "Comercial",
+      id: "resgate",
+      name: "Protocolo de Resgate (pós-C5)",
+      group: "1 · Comercial",
       steps: [
-        { from: "calil",    to: "cliente",  label: "🔴 Ligação de triagem",       note: "Gravada no iPhone; gravação + transcrição automática sobem pro Drive (Clientes/<Nome>/01-Onboarding)" },
-        { from: "drive",    to: "brain",    label: "✅ sync-triagem.sh (30min)",   note: "Transcrição desce pra /opt/account-brains/<slug>/onboarding/triagem/. Áudio vira pointer .link" },
-        { from: "brain",    to: "paperclip",label: "✅ Issue de proposta nasce",   note: "onboard-init cria issue já apontando pro insumo. Sem transcrição → blocked (nunca inventa — gate 0 Calil)" },
-        { from: "paperclip",to: "proposta", label: "🟡 web-builder gera preview",  note: "Skill proposta-preview: id visual Pulso (teal #2CB1BC + DM Sans), 10 seções fixas, benchmark de CPA real da MCC. Aguarda piloto" },
-        { from: "proposta", to: "guilherme",label: "🔴 Revisão visual (DES-335)",  note: "IA executa, humano aprova. Issue vai pra review — nunca direto pro cliente" },
-        { from: "guilherme",to: "calil",    label: "🔴 Aprovação final",           note: "Calil aprova e envia ao prospect" },
-        { from: "calil",    to: "cliente",  label: "🔴 Apresentação + fechamento", note: "Reunião de fechamento (C5) + protocolo de resgate se hesitar" },
+        { from: "calil", to: "altair", label: "🔴 Repassa hesitação", note: "\"Vou pensar\", \"vou ver com o sócio\" ou sumiu após a reunião de fechamento" },
+        { from: "altair", to: "cliente", label: "🔴 Ligação de resgate", note: "Altair LIGA (nunca texto). Sinceridade radical: \"O que te fez hesitar? Risco? Confiança? Momento?\" — isola a objeção real" },
+        { from: "altair", to: "cliente", label: "🔴 Oferta extrema (se preciso)", note: "1º mês gratuito — cliente paga só R$500 de ads. Se gostar: R$2.500/mês a partir do mês 2" },
+        { from: "altair", to: "crm", label: "🔴 Resultado documentado", note: "Fechou → contrato. Não é o momento → CRM com follow-up em 30 dias" },
       ]
     },
     {
-      id: "fechamento",
-      name: "Deal → Contrato → Cobrança (✅)",
-      group: "Comercial",
+      id: "pos-fechamento",
+      name: "Contrato → Provisionamento (✅ auto)",
+      group: "1 · Comercial",
       steps: [
-        { from: "crm",      to: "docuseal", label: "🟡 Deal dispara contrato",    note: "onboard-deal.sh — disparo hoje é semi-manual" },
-        { from: "docuseal", to: "invoice",  label: "✅ Assinou → cobrança",        note: "docuseal-webhook (systemd) → post-contract-invoiceninja.sh cria fatura recorrente pelo período do contrato" },
-        { from: "docuseal", to: "plane",    label: "✅ Onboarding provisionado",   note: "onboard-plane.sh: label de cliente no board Operacional + onboard-calendar.sh: eventos no Google Calendar" },
-        { from: "docuseal", to: "brain",    label: "✅ Repo + Drive do cliente",   note: "gh repo <slug>-account-brain + pasta no Drive com 9 subpastas padrão" },
-      ]
-    },
-
-    // ─── ONBOARDING ESTRATÉGICO ───
-    {
-      id: "diagnostico",
-      name: "Diagnóstico 12 etapas (🟡 DES-335)",
-      group: "Onboarding",
-      steps: [
-        { from: "calil",     to: "cliente",   label: "🔴 Etapa 1 — Coleta (humana)", note: "Questionário de onboarding preenchido na reunião. Única etapa 100% humana" },
-        { from: "paperclip", to: "estrategia",label: "🟡 Etapas 2–12 por IA",       note: "BMC, PESTLE, SWOT, concorrência, auditoria, baseline, plano 90d, ICP, posicionamento, funis, copy. Formato ainda irregular (consolidação pendente)" },
-        { from: "estrategia",to: "sergio",    label: "🔴 Revisão nomeada",           note: "Cada etapa tem revisor: Calil (BMC/SWOT/ICP), Sérgio (PESTLE/concorrência/baseline/funis), Edu (posicionamento/copy)" },
-        { from: "estrategia",to: "brain",     label: "✅ Artefatos no brain",        note: "Salvos em /opt/account-brains/<slug>/artifacts + sync 2h pro Drive" },
+        { from: "contrato", to: "docuseal", label: "✅ Assinatura digital", note: "DocuSeal dispara o docuseal-webhook (systemd) na conclusão" },
+        { from: "docuseal", to: "invoice", label: "✅ Cobrança recorrente", note: "post-contract-invoiceninja.sh: cria cliente + fatura recorrente mensal pelo período do contrato" },
+        { from: "docuseal", to: "drive", label: "✅ Drive AIS provisionado", note: "onboard-deal.sh: pasta do cliente com 9 subpastas padrão (01-Onboarding…09-Contratos)" },
+        { from: "docuseal", to: "brain", label: "✅ Repo account-brain criado", note: "gh repo <slug>-account-brain (privado) + clone em /opt/account-brains, sync 30min" },
+        { from: "docuseal", to: "plane", label: "✅ Board + calendário", note: "onboard-plane.sh: label do cliente no Operacional + issues do template do plano · onboard-calendar.sh: eventos no Google Calendar" },
       ]
     },
 
-    // ─── PERFORMANCE ───
+    // ═══════════ 2 · ONBOARDING ═══════════
     {
-      id: "trafego",
-      name: "Bento → Campanhas (🟡 gate novo)",
-      group: "Performance",
+      id: "o1-anamnese",
+      name: "O1 · Reunião de Onboarding + AIS",
+      group: "2 · Onboarding",
       steps: [
-        { from: "edu",      to: "bento",     label: "🔴 Bento padrão do cliente",  note: "PRÉ-REQUISITO da etapa Meta: link-in-bio com site, redes, WhatsApp de atendimento e locais (padrão Dr. Rafael). <slug>.bento.pulso.marketing" },
-        { from: "bento",    to: "meta",      label: "🟡 Link na bio → campanhas",  note: "Gate no board: issue 'Bento no padrão Pulso' bloqueia a issue de Meta Ads" },
-        { from: "sergio",   to: "gads",      label: "🟡 Setup e otimização Google",note: "Estrutura de conta padrão. Meta de casa: CPL < R$50" },
-        { from: "sergio",   to: "meta",      label: "🔴 Setup Meta Ads",           note: "Meta Ads API ainda não conectada (sem credencial) — leitura de custo só no Google por enquanto" },
-        { from: "meta",     to: "campanhas", label: "🟡 Campanhas no ar",          note: "" },
-        { from: "gads",     to: "campanhas", label: "✅ Custo/CPA por campanha",    note: "Google Ads API v21 conectada na MCC (4 contas). CPA comparável entre clientes" },
-        { from: "campanhas",to: "lp",        label: "✅ UTMs fecham o ciclo",       note: "Toda campanha → LP com UTM → P2 → CPA por campanha no relatório. Loop fechado" },
+        { from: "calil", to: "cliente", label: "🔴 Anamnese (100% humana)", note: "Regra DES-335: etapa 1 é do Calil. Expectativas, cronograma, SLAs, questionário de onboarding preenchido na reunião. Gravada → Drive/01-Onboarding" },
+        { from: "cliente", to: "calil", label: "🔴 Acessos + pré-requisitos", note: "Mapear 5+ itens que dependem de acesso externo (Meta BM, Google Ads, GMB, Analytics, host do site) — checklist explícito de confirmação. Learning Hanna" },
+        { from: "calil", to: "drive", label: "🟡 AIS Layer A alimentada", note: "Materiais nas pastas: Ads, SM, Branding, Comercial, Estratégia, Relatórios, Web, CS" },
+        { from: "calil", to: "brain", label: "🟡 AIS Layer B alimentada", note: "account-brain: design.md, onboarding.md, ads.md, sm.md, crm.md, log.md, performance.md, web.md — o questionário alimenta os agentes" },
+      ]
+    },
+    {
+      id: "des335",
+      name: "O2 · Diagnóstico DES-335 (12 etapas)",
+      group: "2 · Onboarding",
+      steps: [
+        { from: "calil", to: "paperclip", label: "🔴→🟡 Etapa 1 dispara a IA", note: "Coleta humana (Calil) alimenta os agentes para as etapas 2–12. Nada vai ao cliente sem aprovação humana (regra-mãe DES-335)" },
+        { from: "paperclip", to: "calil", label: "🟡 2–4: BMC · PESTLE · SWOT", note: "IA executa; revisão: BMC/SWOT = Calil, PESTLE = Serginho (fatores externos, compliance CFM)" },
+        { from: "paperclip", to: "sergio", label: "🟡 5–7: Concorrência · Auditoria · Baseline", note: "Quadro comparativo + gaps · auditoria digital (site/SM/GMB/tracking — revisão Guilherme/Serginho) · KPIs + metas SMART" },
+        { from: "paperclip", to: "calil", label: "🟡 8–10: Plano 90d · ICP · Posicionamento", note: "Roadmap por fase + matriz de ownership · personas + jornada do paciente · tese de posicionamento (revisão Calil + Eduardo)" },
+        { from: "paperclip", to: "sergio", label: "🟡 11: Funis", note: "Arquitetura topo/meio/fundo + retenção. Revisão: Serginho. Frameworks: V4 4-Fits + Escada de Valor" },
+        { from: "paperclip", to: "edu", label: "🟡 12: Copywriting + TSL/VSL", note: "Big idea, matriz de mensagens, outline de TSL. Revisão: Calil + Eduardo" },
+        { from: "calil", to: "des335art", label: "🔴 12 artefatos aprovados", note: "Todos revisados pelo humano responsável antes de arquivar" },
+        { from: "des335art", to: "drive", label: "✅ Arquiva em /Estratégia", note: "AIS Layer A + espelho no account-brain (sync artefatos → Drive a cada 2h)" },
       ]
     },
 
-    // ─── MANUTENÇÃO / PROVA DE VALOR ───
+    // ═══════════ 3 · SETUP (módulos por plano) ═══════════
     {
-      id: "prova-valor",
-      name: "Relatório semanal (✅ seg 8h)",
-      group: "Manutenção",
+      id: "m2-branding",
+      name: "M2 · Branding & MIV (O3–O4)",
+      group: "3 · Setup — módulos",
       steps: [
-        { from: "plane",    to: "relatorio", label: "✅ Entregas da semana",       note: "Issues Done/andamento/bloqueadas por label de cliente + fallback por keyword" },
-        { from: "sheets",   to: "relatorio", label: "✅ Leads + origem",           note: "P1 (captados) + P2 (origem, campanha, criativo, página). Números auditados por LEAD_ID" },
-        { from: "gads",     to: "relatorio", label: "✅ Investimento + CPA",        note: "Nome real de campanha + CPA por campanha + farol vs meta CPL<R$50 (🟢/🔴)" },
-        { from: "relatorio",to: "evolution", label: "✅ WhatsApp da Assessoria",    note: "send-weekly-reports.sh — cron segunda 8h BRT. Equipe repassa ao cliente" },
-        { from: "relatorio",to: "brain",     label: "✅ Histórico versionado",      note: "semana-YYYY-Wnn.md no brain → sync 2h pro Drive do cliente" },
-        { from: "relatorio",to: "affine",    label: "🟡 Board 'tudo que foi feito'",note: "Em construção: doc por cliente no Affine com linha do tempo de entregas" },
+        { from: "edu", to: "cliente", label: "🔴 O3 — Briefing visual", note: "Paleta, tipografia, mood board, referências, tom. Todos os planos (dia ~3). Learning: paralelizar com coleta de fotos economiza 5–7 dias" },
+        { from: "cliente", to: "edu", label: "🔴 Referências aprovadas", note: "Cliente valida a direção antes do MIV — evita retrabalho" },
+        { from: "edu", to: "miv", label: "🟡 O4 — Construção do MIV", note: "Logo (se necessário), paleta, tipografia, templates de SM, brand guide. Agente Designer apoia; Eduardo dirige. Meta: aprovado na 1ª versão (dia ~14)" },
+        { from: "miv", to: "cliente", label: "🔴 Aprovação do MIV", note: "Sem aprovação não avança pra produção de conteúdo" },
+        { from: "miv", to: "drive", label: "✅ Arquiva em /Branding", note: "Editáveis + PDFs no AIS" },
+      ]
+    },
+    {
+      id: "m3-site",
+      name: "M3 · Site Premium (só Premium)",
+      group: "3 · Setup — módulos",
+      steps: [
+        { from: "guilherme", to: "cliente", label: "🔴 Briefing do site", note: "Dia ~5 do plano Premium. Playbook 03" },
+        { from: "guilherme", to: "site", label: "🟡 Desenvolvimento (8 seções + blog)", note: "Web-builder executa; blog estruturado pra SEO. Dia ~22" },
+        { from: "site", to: "analytics", label: "🟡 Rastreamento + deploy", note: "Schema.org, sitemap, PageSpeed mobile >85. Deploy versionado no account-brain (web.md)" },
+      ]
+    },
+    {
+      id: "m4-lp",
+      name: "M4 · LP + Rastreamento (O5)",
+      group: "3 · Setup — módulos",
+      steps: [
+        { from: "calil", to: "guilherme", label: "🟡 Copy e estratégia da LP", note: "Insumo: artefatos DES-335 (ICP, posicionamento, copy mestra). Processo Calil: briefing → estratégia → wireframe → copy → mapa visual → build → auditoria (gates)" },
+        { from: "guilherme", to: "lp-ar", label: "🟡 Build + deploy versionado", note: "Web-builder executa (Vite). Deliverable no repo do cliente (deliverables/DES-XXX) + preview na VPS. Todos os planos (dia ~20)" },
+        { from: "guilherme", to: "analytics", label: "🟡 GA4 + Pixel + GTM validados", note: "Eventos de conversão testados ponta-a-ponta antes do tráfego. Tracking 100% é gate do M6" },
+        { from: "lp-ar", to: "webhook", label: "✅ Form ligado ao lead-webhook", note: "LP → leads.pulso.marketing → planilhas P1/P2 do cliente (SOP CRM Lead Webhook). Blindado contra testes, dedup 5min" },
+        { from: "lp-ar", to: "cliente", label: "🔴 Aprovação + A/B", note: "Cliente valida copy/design/form. A/B de headline (dia ~22); Premium: + variação de LP por procedimento prioritário" },
+      ]
+    },
+    {
+      id: "o7-vitrine",
+      name: "O7–O11 · Vitrine Instagram + GMB",
+      group: "3 · Setup — módulos",
+      steps: [
+        { from: "edu", to: "instagram", label: "🟡 O7 — Setup da vitrine", note: "Bio (autoridade + transformação + CTA), foto, destaques, posts-chave fixados, GMB otimizado, Doctoralia. Padrão: Template_Vitrine + Prompt_Master_Vitrine" },
+        { from: "edu", to: "cliente", label: "🔴 O8 — Sessão de gravação batch", note: "Fotos e vídeos no consultório, material bruto organizado. Learning: agendar já na semana 1" },
+        { from: "edu", to: "instagram", label: "🟡 O9 — Mockups → assets reais", note: "Substituição em LP, site, posts e anúncios pelas fotos/vídeos reais do médico" },
+        { from: "edu", to: "vitrine", label: "🟡 O10 — Edição dos vídeos", note: "Reels, destaques, institucional — copy, legendas, trilha (CapCut Pro)" },
+        { from: "vitrine", to: "cliente", label: "🔴 O11 — Review final + aprovação", note: "Grid, destaques, bio, posts fixados, GMB com fotos — checklist 100% antes de considerar entregue" },
+        { from: "vitrine", to: "agendador", label: "🟡 Publicação via ferramenta", note: "REGRA NÃO-NEGOCIÁVEL: Meta Business Suite/Later — a Pulso nunca acessa o Instagram do cliente diretamente" },
+      ]
+    },
+    {
+      id: "m6-trafego",
+      name: "M6 · Tráfego Pago (O6 + Bento + O12)",
+      group: "3 · Setup — módulos",
+      steps: [
+        { from: "sergio", to: "gads", label: "🟡 O6 — Setup Google Ads", note: "Campanhas Marca + Especialidade + Problema/Sintoma; keywords, anúncios, extensões, metas de conversão no GA4. Dia ~25. CTR meta >5%, CPC <R$4" },
+        { from: "guilherme", to: "bento", label: "🟡 Bento padrão no ar (GATE)", note: "PRÉ-REQUISITO do Meta: site + redes + WhatsApp c/ UTM + locais (Maps) + agendamento, em <slug>.bento.pulso.marketing. Issue bloqueia o Setup Meta Ads (dia ~24). SOP Bento" },
+        { from: "bento", to: "instagram", label: "🔴 Link na bio do cliente", note: "Serginho confere antes do lançamento" },
+        { from: "sergio", to: "meta", label: "🟡 O12 — Setup Meta Ads", note: "BM + pixel validado, públicos custom (visitantes LP) + lookalike + frio, estrutura ToFu 20%/MoFu 30%/BoFu 50%, criativos por etapa. CPL meta <R$35, ROAS >3:1. Premium: + remarketing desde a semana 3" },
+        { from: "meta", to: "campanhas", label: "🟡 Lançamento + monitoramento", note: "Budget conservador, monitoramento diário na 1ª semana (dia ~28)" },
+        { from: "gads", to: "campanhas", label: "✅ Custo/CPA por campanha", note: "Google Ads API conectada na MCC — CPA real por campanha alimenta o relatório semanal automaticamente" },
+      ]
+    },
+    {
+      id: "m7-seo",
+      name: "M7 · SEO + GMB contínuo (só Premium)",
+      group: "3 · Setup — módulos",
+      steps: [
+        { from: "guilherme", to: "site", label: "🟡 Setup SEO técnico", note: "Dia ~30. Playbook 08" },
+        { from: "sergio", to: "instagram", label: "🟡 Campanha de reviews GMB", note: "Via WhatsApp pós-consulta (80% de resposta nos POCs). Meta: +5 reviews, nota >4.5★" },
+      ]
+    },
+    {
+      id: "m8-bot",
+      name: "M8 · Bot IA de Atendimento (só Premium)",
+      group: "3 · Setup — módulos",
+      steps: [
+        { from: "calil", to: "guilherme", label: "🔴 Mapeamento do atendimento", note: "Jornadas do paciente: agendamento, dúvidas, pós-consulta (dia ~7)" },
+        { from: "guilherme", to: "bot", label: "🟡 Typebot + Evolution API", note: "Fluxos conversacionais no WhatsApp do cliente. Founding-engineer executa (dia ~25)" },
+        { from: "bot", to: "cliente", label: "🔴 Treinamento + validação", note: "Cliente valida respostas antes de ativar. Metas: qualificação >70%, resposta <30s, 24/7 (dia ~35)" },
+        { from: "bot", to: "bot-ar", label: "🟡 Bot no ar + métricas", note: "Taxa de resolução, tempo de resposta, leads gerados — entram no relatório" },
+      ]
+    },
+    {
+      id: "kickoff",
+      name: "O13–O14 · Kickoff + Relatório S1",
+      group: "3 · Setup — módulos",
+      steps: [
+        { from: "calil", to: "cliente", label: "🔴 O13 — Reunião de kickoff", note: "Apresenta tudo que foi entregue, handover de acessos, explica o ongoing. Onboarding encerrado (~30d Essencial/Marketing, ~45d Premium)" },
+        { from: "analytics", to: "sergio", label: "✅ Dados da semana 1", note: "GA4 + Meta + Google fluindo" },
+        { from: "sergio", to: "rel-sem", label: "🟡 O14 — Relatório baseline", note: "Linha de base pra otimização contínua — o ongoing começa oficialmente" },
       ]
     },
 
-    // ─── INFRA ───
+    // ═══════════ 4 · ONGOING (ciclo mensal) ═══════════
     {
-      id: "fundacao",
-      name: "Fundação (✅ hardening jul/26)",
-      group: "Infra",
+      id: "pre-mes",
+      name: "PRÉ-MÊS · Calendário editorial",
+      group: "4 · Ongoing",
       steps: [
-        { from: "guilherme", to: "webhook",  label: "✅ Firewall + secrets",       note: "ufw + DOCKER-USER (só 22/80/443 públicos). Tokens centralizados em /root/bin/.env (chmod 600)" },
-        { from: "guilherme", to: "sheets",   label: "✅ Backup diário 4h",          note: "6 bancos (Plane, CRM, InvoiceNinja, Evolution, Affine, Listmonk) → local + Google Drive, retenção 14d" },
-        { from: "guilherme", to: "brain",    label: "✅ Memória institucional",     note: "pulso-brain (playbooks/SOPs) + account-brains (por cliente) + este mapa" },
+        { from: "paperclip", to: "calil", label: "🟡 IA gera o calendário", note: "Temas, formatos, datas — antes de virar o mês" },
+        { from: "calil", to: "edu", label: "🔴 Revisão interna", note: "Alinha com sazonalidade clínica e campanhas ativas" },
+        { from: "calil", to: "cliente", label: "🔴 Aprovação OBRIGATÓRIA", note: "Cliente aprova calendário E confirma data de gravação antes de virar o mês — sem isso o mês não começa" },
+      ]
+    },
+    {
+      id: "on1-on4",
+      name: "ON1–ON4 · Produção de conteúdo",
+      group: "4 · Ongoing",
+      steps: [
+        { from: "edu", to: "conteudo", label: "🟡 ON1 — Execução do calendário", note: "Roteiros, estáticos, copy do mês. Marketing: 16 posts/mês · Premium: 20+ (15 Reels)" },
+        { from: "edu", to: "cliente", label: "🔴 ON2 — Gravação batch mensal", note: "Reels, vídeos curtos, depoimentos, educativo" },
+        { from: "edu", to: "conteudo", label: "🟡 ON3 — Edição finalizada", note: "Vídeos, carrosséis, estáticos com legendas e CTAs" },
+        { from: "conteudo", to: "cliente", label: "🔴 Aprovação do mês", note: "Cliente aprova TODO o conteúdo antes do agendamento" },
+        { from: "conteudo", to: "agendador", label: "🟡 ON4 — Agendamento via ferramenta", note: "Meta Business Suite/Later — nunca acesso direto ao perfil. 4–5 publicações/semana" },
+        { from: "conteudo", to: "drive", label: "✅ Arquiva em /SM", note: "Peças finais no AIS" },
+      ]
+    },
+    {
+      id: "maquina-leads",
+      name: "Máquina de leads do cliente (✅ contínua)",
+      group: "4 · Ongoing",
+      steps: [
+        { from: "paciente", to: "lp", label: "✅ Clica no anúncio ou na bio", note: "Campanhas Meta/Google + bento na bio levam o PACIENTE (lead do cliente) pra LP com UTMs completas" },
+        { from: "lp", to: "webhook", label: "✅ Form → lead-webhook", note: "leads.pulso.marketing → :3020. Dedup 5min por telefone+página, blindado contra testes (curl/TESTE nunca contam). Auditado por LEAD_ID" },
+        { from: "webhook", to: "crm", label: "✅ P1 (secretária) + P2 (UTMs)", note: "P1 = planilha operacional (STATUS, nome, WhatsApp) · P2 = tracking completo (utm, campaign_id, ad_id, gclid) — a fonte do CPA por campanha" },
+        { from: "crm", to: "paciente", label: "🔴 Atendimento → consulta", note: "Secretária (ou Bot IA no Premium) atende e agenda. Gap conhecido: STATUS da P1 raramente atualizado — impede medir lead→consulta" },
+      ]
+    },
+    {
+      id: "on5-on6",
+      name: "ON5–ON6 · Otimização + Relatório semanal",
+      group: "4 · Ongoing",
+      steps: [
+        { from: "analytics", to: "sergio", label: "✅ Dados da semana", note: "GA4 + Meta + Google: CTR, CPC, ROAS, frequência" },
+        { from: "sergio", to: "meta", label: "🟡 ON5 — Otimiza Meta", note: "Budget, troca de criativos (a cada 2 semanas no Premium), refino de públicos. Método SUBIDO (PB06)" },
+        { from: "sergio", to: "gads", label: "🟡 ON5 — Otimiza Google", note: "Negativação de keywords, lances, extensões" },
+        { from: "plane", to: "rel-sem", label: "✅ Entregas da semana coletadas", note: "weekly-report.py: issues Done/andamento por label do cliente no board Operacional" },
+        { from: "webhook", to: "rel-sem", label: "✅ Leads + CPA por campanha", note: "P1/P2 + Google Ads API: leads por origem, nome real da campanha, CPA vs meta CPL<R$50 com farol 🟢/🔴" },
+        { from: "rel-sem", to: "cliente", label: "✅ ON6 — WhatsApp segunda 8h", note: "send-weekly-reports.sh via Evolution → Assessoria repassa. CS pilar 2: feedback semanal, SLA de resposta 15min" },
+      ]
+    },
+    {
+      id: "cs",
+      name: "Customer Success · 3 pilares",
+      group: "4 · Ongoing",
+      steps: [
+        { from: "calil", to: "crm", label: "🟡 Pilar 1 — CRM comportamental", note: "Transcrições de todas as reuniões → perfil do médico (ceticismo, estilo, limitações, disponibilidade pra conteúdo). CRM vivo guia o tom da agência" },
+        { from: "calil", to: "cliente", label: "🔴 Pilar 2 — Feedback semanal", note: "Toda semana via WhatsApp: entregas, status de campanhas, próximos passos. Calil é o rosto humano; o relatório automatizado alimenta" },
+        { from: "looker", to: "rel-mes", label: "✅ Dashboards consolidados", note: "Looker Studio junta GA4 + Meta + Google pro relatório mensal e de 90 dias" },
+        { from: "calil", to: "rel-mes", label: "🔴 Pilar 3 — Reunião mensal (ON7)", note: "Relatório de 1 mês: investimento, CTR/CPL, agendamentos cruzados com dados da clínica, links das peças. Review + próximo ciclo" },
+        { from: "rel-mes", to: "drive", label: "✅ Ata em /CS", note: "Decisões e próximos passos arquivados no AIS" },
+      ]
+    },
+    {
+      id: "renovacao",
+      name: "ON8 · Renovação (dia 90)",
+      group: "4 · Ongoing",
+      steps: [
+        { from: "analytics", to: "sergio", label: "✅ Performance 90 dias", note: "ROI, crescimento, CPL, ROAS, engajamento. Metas fase Escala: CPL <R$30, ROAS >3:1, +150 seguidores, NPS >70" },
+        { from: "sergio", to: "calil", label: "🟡 Análise consolidada", note: "Oportunidades de upsell de módulos com dados concretos" },
+        { from: "calil", to: "cliente", label: "🔴 Proposta de renovação", note: "Comparativo antes/depois + proposta. Altair entra se precisar de suporte relacional. Meta: renovação >80%" },
+        { from: "calil", to: "rel-mes", label: "🔴 Handover completo (PB10)", note: "Pacote completo (docs, arquivos, acessos), call 45–60min, guia rápido, NPS. Revisão: Altair" },
+      ]
+    },
+
+    // ═══════════ 5 · GESTÃO & CULTURA ═══════════
+    {
+      id: "gestao",
+      name: "Plane · AIS · Aura · Rituais",
+      group: "5 · Gestão & Cultura",
+      steps: [
+        { from: "plane", to: "guilherme", label: "🟡 3 boards do Plane", note: "Comercial (Backlog→Closed) · Conteúdo (copy→design→review→agendamento→done) · Performance (tráfego). 1 assignee por issue, labels obrigatórias, templates por plano provisionados no onboarding" },
+        { from: "brain", to: "drive", label: "✅ AIS — 2 camadas sincronizadas", note: "Layer A (Drive, pastas) ↔ Layer B (GitHub account-brain, .md por área). Sync 30min (issues) + 2h (artefatos → Drive)" },
+        { from: "plane", to: "aura", label: "🟡 Aura System (gamificação)", note: "Pontos por issue Done (+10/+30/+100 por prioridade), label Contrato Fechado +500 (Closer+SDR), punições: SLA estourado −20/dia, refação −15. Dashboard exibido na daily" },
+        { from: "aura", to: "calil", label: "🔴 Rituais Pulso Culture", note: "Daily: temperatura/humor + blockers · Sexta: Kudos & Pedras no Sapato (pedras recorrentes viram melhoria de processo no Plane) · Pulse Rate do cliente: NPS por marco DES-335" },
+        { from: "guilherme", to: "brain", label: "✅ Plataforma protegida", note: "Backups diários dos 6 bancos (local + Drive), firewall ufw+DOCKER-USER, secrets centralizados — a infra que sustenta tudo acima" },
       ]
     },
   ]
